@@ -1,8 +1,0 @@
-{
-  "IT" : ["Retro", "imprimante", "ordinateur lent", "virus", "antivirus", "donnees","donnees personnelles","ecran"],
-  "BADGE" : ["badge", "carte acces","carte acces","cle","carte entreprise"],
-  "PROPRETE" : ["sale", "poussiere", "poussiereux", "crade", "propre"],
-  "CLIMATISATION" : ["climatisation", "chauffage","chauffe","conditionnement", "air conditionne", "calefaction","chaud","froid","chaleur"],
-  "AUTRE": []
-}
-
