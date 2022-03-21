@@ -1,0 +1,77 @@
+{"tag":[
+    {
+        "text": "Il n'y a  plus de papier dans l'imprimante au  rez de chaussee ",
+        "entities": [
+            [32, 42, "IT"],
+            [47, 62, "LIEU"]
+        ]
+    },
+    {
+        "text": "Bug avec mon badge ", 
+        "entities": [[13, 18, "BADGE"]]
+    },
+    {
+        "text": "bonjour, je m'appelle Claude Chaise , j'aimerais signaler un incident dans la salle de reunion du premier etage : effectivement j'ai remarque que le retro ne fonctionnait plus, il clignote rouge. J'ai appele le support mais pas de reponse. Pouvez me rappeler au 0787675678 merci au revoir ",
+        "entities": [
+            [149, 154, "IT"],
+            [78, 94, "LIEU"],
+            [98, 111, "LIEU"],
+            [22, 35, "AUTHEUR"],
+            [262, 272, "TELEPHONE"]
+        ]
+    },
+    {
+        "text":"Le debit du wifi est vraiment insuffisant", 
+        "entities":[[12, 16, "IT"]]
+    },
+    {
+        "text":"la connexion est lente", 
+        "entities": [[3, 12, "IT"]]
+    },
+    {
+        "text":"La climatisation ne fonctionne plus a l'acceuil ",
+        "entities": [
+            [3, 16, "CLIMATISATION"],
+            [40, 47, "LIEU"]
+        ]
+    },
+    {
+        "text": "Les tours de nettoyage sont insuffisants ", 
+        "entities": [[13, 22, "PROPRETE"]]
+    },
+    {
+        "text":"J'ai egare mon badge ",
+        "entities":[[15, 20, "BADGE"]]
+    },
+    {
+        "text":"Les badges des nouveaux employes ne fonctionnent pas ",
+        "entities":[[4, 10, "BADGE"]]
+    },
+    {
+        "text":"Je n'arrive pas a reguler la climatisation dans le bureau 215 du rez de jardin ",
+        "entities":[
+            [29, 42, "CLIMATISATION"],
+            [51, 61, "LIEU"],
+            [65, 78, "LIEU"]
+        ]
+    },
+    {
+        "text":"La chasse d'une toilette homme du troisieme etage ne fonctionne plus ",
+        "entities": [
+            [16, 24, "PROPRETE"],
+            [34, 49, "LIEU"]
+        ]
+    },
+    {
+        "text":"Ma carte d'acces ne fonctionne plus ", 
+        "entities": [[3, 16, "BADGE"]]
+    },
+    {
+        "text":"Les ordinateur du deuxieme etage sont lent ", 
+        "entities": [
+            [4, 14, "IT"], 
+            [18, 32, "LIEU"]
+        ]
+    }
+
+]}

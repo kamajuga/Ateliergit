@@ -35,7 +35,7 @@ if __name__ == '__main__':
     #talk("Voici un récapitulatif de vos informations:")
     User_Info.Recap_Information()
 
-    User_Info.check_infos()
+    User_Info.clean_user_information()
     print("Merci, vos informations seront envoyés auprès du service correspondant.\nNous vous recontacterons dans les plus bref délais")
     #talk("Vos informations seront envoyés auprès du service correspondant.\nNous vous recontacterons dans les plus bref délais")
 

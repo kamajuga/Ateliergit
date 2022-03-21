@@ -8,20 +8,37 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
 import string
 from Postgre_connection import Database
-#from text_to_speech import talk
-#from speech_r import listen
+from json_dump import dump_unknown_text
+from Email import send_mail
+
+"""
+    IMPORT FOR DEEPL 
+"""
+import random
+from spacy.util import minibatch, compounding
+from pathlib import Path
+
+import fr_core_news_md, fr_core_news_sm
+from spacy.training.example import Example
+import os
+
+nlp = fr_core_news_sm.load()
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 db = Database()
+
+
 def replace_at(word):
-    
     if "arobase" in word:
-        word = word.replace("arobase",'@')
+        word = word.replace("arobase", '@')
     # for ele in word:
     #     if ele == "arobase":
     #         word = word.replace(ele, "@")
     # 
     return "".join(word.split())
-    
+
+
 def remove_ponctuation(word):
     punc = '''!()-[]'{};:'"\,<>./?@#$%^&*_~'''
 
@@ -32,6 +49,7 @@ def remove_ponctuation(word):
             word = word.replace(ele, "")
 
     return word
+
 
 def clean(word):
     stpwords = set(stopwords.words("french"))
@@ -69,6 +87,13 @@ class Information:
         self._place = ""
         self._author = ""
         self._comment = ""
+
+        """
+            FOR DEEP LEARNING TRAINNG ONLY
+        """
+        self.train = []
+        self.disable_pipe = []
+        self.text = ""
         pass
 
     """
@@ -111,6 +136,106 @@ class Information:
         pass
 
     """
+        GETTER AND SETTER FOR DL TRAINING ONLY
+    """
+
+    def get_train(self):
+        return self.train
+
+    def set_train(self, value):
+        self.train = value
+        pass
+
+    def get_disable_pipe(self):
+        return self.disable_pipe
+
+    def set_disable_pipe(self, value):
+        self.disable_pipe = value
+        pass
+
+    """
+        DEFINE METHODS DEEPL ONLY
+    """
+
+    def _dl_load_json_transform(self):
+        # Load Json file
+        with open('./training.json', 'r') as f:
+            data = json.load(f)
+            pass
+
+        # format file
+        for ele in data['tag']:
+            self.train.append((ele.get('text'), {"entities": [tuple(elem) for elem in ele.get('entities')]}))
+
+        pass
+
+    def dl_def_pipeline(self):
+
+        ner = nlp.get_pipe("ner")
+
+        for _, annotation in self.get_train():
+            for ent in annotation.get("entities"):
+                ner.add_label(ent[2])
+
+        pipe_exceptions = ["ner", "trf_wordpiecer", "trf_tok2vec"]
+        self.set_disable_pipe([pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptions])
+
+    pass
+
+    def dl_training(self):
+        with nlp.disable_pipes(*self.get_disable_pipe()):
+            optimizer = nlp.resume_training()
+
+            for iterration in range(100):
+                random.shuffle(self.get_train())
+                losses = {}
+
+                batches = minibatch(self.get_train(), size=compounding(1.0, 4.0, 1.001))
+
+                for batch in batches:
+                    texts, annotations = zip(*batch)
+
+                    example = []
+                    # Update the model with iterating each text
+                    for i in range(len(texts)):
+                        doc = nlp.make_doc(texts[i])
+                        example.append(Example.from_dict(doc, annotations[i]))
+
+                    # Update the model
+                    nlp.update(example, drop=0.5, losses=losses)
+
+                    # print("Losses", losses)
+
+    pass
+
+    def dl_recognize_entities(self, text):
+        self.text = text
+
+        category = ["IT", "BADGE", "PROPRETE", "CLIMATISATION"]
+        doc = nlp(text)
+        if not doc.ents:
+            # Enrégistrer dans un fichier Json categorie autre
+            #print("Aucune entité reconnue")
+            dump_unknown_text(text)
+        else:
+            for ent in doc.ents:
+                print(ent.text, ent.label_)
+                if ent.label_ in category:
+                    self.set_category(ent.label_)
+                else:
+                    if ent.label_ not in ['LIEU','AUTHEUR', 'TELEPHONE']:
+                        self.set_category('AUTRE')
+                        # insert 'resquest' in json category 'AUTRE'
+                        dump_unknown_text(text)
+                        send_mail(text)
+
+                if ent.label_ == "LIEU":
+                    self.set_place(ent.text)
+
+                if ent.label_ == "AUTHEUR":
+                    self.set_author(ent.text)
+
+    """
         DEFINE METHODS
     """
 
@@ -120,11 +245,40 @@ class Information:
                 return json.load(f)
         except ():
             print("Une erreur s'est produit l'or de l'ouverture du fichier")
-            #talk()
+            # talk()
             return None
         pass
 
-    def check_infos(self):
+    def reset_informations(self):
+        # we dont reset sel.author because it is consider that the same user can do as much request as he want.
+        self.set_request_title("")
+        self.set_category("")
+        self.set_place("")
+        self.set_comment("")
+
+    def check_empty_information(self):
+        if not self.get_request_title():
+            inp = input("Quel est l'objet de votre demande:")
+            if not inp:
+                inp = "non renseigné"
+            self.set_request_title(inp)
+        if not self.get_place():
+            self.PLace(input("Quel est le lieu de l'incident?"))
+        if not self.get_category():
+            cat = input("quelle est la categorie de votre demande :(IT, PROPRETE, BADGE, CLIMATISATION ou AUTRE)").upper()
+            if cat not in ["IT", "BADGE", "PROPRETE", "CLIMATISATION"]:
+                cat = "AUTRE"
+                dump_unknown_text(self.text)
+                send_mail(self.text)
+            self.set_category(cat)
+        if not self.get_author():
+            self.Identify()
+        if not self.get_comment():
+            self.Comment(input("Un commentaire a ajouter? :"))
+        self.clean_user_information()
+
+    def clean_user_information(self):
+        # Cleans the user's informations and insert in the database
         cleaned_title = remove_ponctuation(self.get_request_title())
         self.set_request_title(cleaned_title)
 
@@ -134,30 +288,19 @@ class Information:
         cleaned_comment = remove_ponctuation(self.get_comment())
         self.set_comment(cleaned_comment)
 
-        if self._request_title != "" and self._category != "" and self._place != "" and self._comment != "":
+        if self._request_title != "" and self._category != "" and self._place != "":
+            #comment doesn't have to be given
             db.insert_request_info(self.get_request_title(), self.get_category(), self.get_place(), self.get_comment())
 
     def Identify(self):
 
-        #talk('Votre nom complet s\'il vous plait:')
-        #print("Votre nom complet:")
-        #name = listen()
-
         name = input('Votre nom complet:')
-
-        #talk('Votre numero de téléphone:')
-        #print("Votre numéro de téléphone:")
-        #number = listen()
 
         number = input('Votre numero de téléphone:')
 
-        #talk('Votre addresse e-mail:')
-        #print("Votre addresse e-mail:")
-        #email = listen()
-
         email = input('Votre addresse e-mail:')
+
         email = replace_at(email)
-        #print(email)
 
         db.insert_author(name, number, email)
 
@@ -170,7 +313,6 @@ class Information:
         text = ""
 
         print("Quelle est la catégorie de votre Problème (Tapez \"autre\" si categorie non proposée)  :")
-        #talk("Quelle est la catégorie de votre Problème (Tapez \"autre\" si categorie non proposée)  :")
 
         categories_json = self._load_json("./intent.json")
 
@@ -191,7 +333,7 @@ class Information:
                     self.set_category(category)
                     isInpInCat = True
                     print("C'est noté Merci.")
-                    #talk("C'est noté Merci.")
+                    # talk("C'est noté Merci.")
 
                 elif category.upper() == "AUTRE":
                     print("Quelle est votre problème ?")
@@ -209,7 +351,6 @@ class Information:
 
     def Category(self, text):
         print("Quelle est la catégorie de votre demande")
-        #talk("Quelle est la catégorie de votre demande")
 
     def Gess_category(self, text):
 
@@ -227,17 +368,15 @@ class Information:
         category = list(category_json.keys())
         if index is None:
             print(category[-1])
-            #talk("La catégorie de votre demande est: {}".format(category[-1]))
             self.set_category(category[-1])
         else:
             print(category[index])
-            #talk("La catégorie de votre demande est: {}".format(category[index]))
             self.set_category(category[index])
 
         pass
 
     def Title(self, text):
-
+        # set the user's request title and guess the category
         self.set_request_title(text)
 
         self.Gess_category(text)
@@ -250,19 +389,14 @@ class Information:
 
     def Recap_Information(self):
         print("Demandeur: {}".format(self.get_author()))
-        #talk("Demandeur: {}".format(self.get_author()))
 
         print("Objet de la demande: {}".format(self.get_request_title()))
-        #talk("Objet de la demande: {}".format(self.get_request_title()))
 
         print("Catégorie: {}".format(self.get_category()))
-        #talk("Catégorie: {}".format(self.get_category()))
 
         print("Lieu de l'incident: {}".format(self.get_place()))
-        #talk("Lieu de l'incident: {}".format(self.get_place()))
 
         print("Commentaire: {}".format(self.get_comment()))
-        #talk("Commentaire: {}".format(self.get_comment()))
 
         # def Modify(self):
         #     print("")
@@ -275,6 +409,22 @@ db.close()
 
 if __name__ == '__main__':
     info = Information()
+    nlp = fr_core_news_sm.load()
 
-    info.Identify()
+    info._dl_load_json_transform()
+    info.dl_def_pipeline()
+    info.dl_training()
+
+    # doc = nlp("la climatisation ne fonctionne plus ")
+    # print('Entities', [(ent.text, ent.label_) for ent in doc.ents])
+    while True:
+        request = input("En quoi pouvons nous vous aider ? ")
+        if request == "q":
+            break
+
+        info.dl_recognize_entities(request)
+        info.check_empty_information()
+        info.reset_informations()
+        # print('Entities', [(ent.text, ent.label_) for ent in doc.ents])
+
     pass
