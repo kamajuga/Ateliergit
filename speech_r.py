@@ -15,7 +15,7 @@ def listen():
     try:
         recognized = recog.recognize_google(audio, language="fr-FR")
         print("vous ->", recognized)
-        talk(recognized)
+        #talk(recognized)
         return recognized
     except RequestError as err:
         print(err)

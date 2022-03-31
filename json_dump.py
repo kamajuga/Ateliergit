@@ -4,11 +4,13 @@ import json
 def dump_unknown_text(str_to_dump):
     with open('json_data.json', 'r') as outfile:
         data = json.load(outfile)
-        data.append(str_to_dump)
+        if str_to_dump not in data:
+            data.append(str_to_dump)
 
     outfile.close()
 
     with open('json_data.json', 'w') as outfile:
+
         json_string = json.dumps(data)
         outfile.write(json_string)
         outfile.close()
@@ -34,5 +36,5 @@ def dump_in_training_model(text, entities):
 
 
 if __name__ == "__main__":
-    # dump_unknown_text('je vais bien')
-    dump_in_training_model()
+    dump_unknown_text('pourquoi')
+    #dump_in_training_model()
